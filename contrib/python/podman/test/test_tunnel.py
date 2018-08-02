@@ -55,7 +55,7 @@ class TestTunnel(unittest.TestCase):
     def test_tunnel(self, mock_finalize, mock_exists, mock_Popen):
         context = Context(
             'unix:/01',
-            'io.projectatomic.podman',
+            'io.containers.podman',
             '/tmp/user/socket',
             '/run/podman/socket',
             'user',

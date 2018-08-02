@@ -50,10 +50,10 @@ class PodmanError(VarlinkErrorProxy):
 
 
 ERROR_MAP = {
-    'io.projectatomic.podman.ContainerNotFound': ContainerNotFound,
-    'io.projectatomic.podman.ErrorOccurred': ErrorOccurred,
-    'io.projectatomic.podman.ImageNotFound': ImageNotFound,
-    'io.projectatomic.podman.RuntimeError': PodmanError,
+    'io.containers.podman.ContainerNotFound': ContainerNotFound,
+    'io.containers.podman.ErrorOccurred': ErrorOccurred,
+    'io.containers.podman.ImageNotFound': ImageNotFound,
+    'io.containers.podman.RuntimeError': PodmanError,
 }
 
 
