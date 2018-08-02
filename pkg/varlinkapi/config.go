@@ -1,18 +1,18 @@
 package varlinkapi
 
 import (
-	ioprojectatomicpodman "github.com/projectatomic/libpod/cmd/podman/varlink"
+	iocontainerspodman "github.com/projectatomic/libpod/cmd/podman/varlink"
 	"github.com/urfave/cli"
 )
 
 // LibpodAPI is the basic varlink struct for libpod
 type LibpodAPI struct {
 	Cli *cli.Context
-	ioprojectatomicpodman.VarlinkInterface
+	iocontainerspodman.VarlinkInterface
 }
 
 // New creates a new varlink client
-func New(cli *cli.Context) *ioprojectatomicpodman.VarlinkInterface {
+func New(cli *cli.Context) *iocontainerspodman.VarlinkInterface {
 	lp := LibpodAPI{Cli: cli}
-	return ioprojectatomicpodman.VarlinkNew(&lp)
+	return iocontainerspodman.VarlinkNew(&lp)
 }

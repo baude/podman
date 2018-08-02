@@ -161,7 +161,7 @@ class Client():
         """Construct a podman varlink Client.
 
         uri from default systemd unit file.
-        interface from io.projectatomic.podman.varlink, do not change unless
+        interface from io.containers.podman.varlink, do not change unless
             you are a varlink guru.
         """
         self._client = BaseClient.factory(uri, interface, **kwargs)

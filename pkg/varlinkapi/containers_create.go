@@ -21,7 +21,7 @@ import (
 )
 
 // CreateContainer ...
-func (i *LibpodAPI) CreateContainer(call ioprojectatomicpodman.VarlinkCall, config ioprojectatomicpodman.Create) error {
+func (i *LibpodAPI) CreateContainer(call iocontainerspodman.VarlinkCall, config iocontainerspodman.Create) error {
 	runtime, err := libpodruntime.GetRuntime(i.Cli)
 	if err != nil {
 		return call.ReplyRuntimeError(err.Error())
@@ -71,7 +71,7 @@ func (i *LibpodAPI) CreateContainer(call ioprojectatomicpodman.VarlinkCall, conf
 
 // varlinkCreateToCreateConfig takes  the varlink input struct and maps it to a pointer
 // of a CreateConfig, which eventually can be used to create the OCI spec.
-func varlinkCreateToCreateConfig(ctx context.Context, create ioprojectatomicpodman.Create, runtime *libpod.Runtime, imageName string, data *inspect.ImageData) (*cc.CreateConfig, error) {
+func varlinkCreateToCreateConfig(ctx context.Context, create iocontainerspodman.Create, runtime *libpod.Runtime, imageName string, data *inspect.ImageData) (*cc.CreateConfig, error) {
 	var (
 		inputCommand, command                                    []string
 		memoryLimit, memoryReservation, memorySwap, memoryKernel int64
