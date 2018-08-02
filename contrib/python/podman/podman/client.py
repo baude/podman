@@ -30,7 +30,7 @@ class BaseClient():
     @classmethod
     def factory(cls,
                 uri=None,
-                interface='io.projectatomic.podman',
+                interface='io.containers.podman',
                 *args,
                 **kwargs):
         """Construct a Client based on input."""
@@ -150,18 +150,18 @@ class Client():
 
         >>> import podman
         >>> c = podman.Client(uri='unix:/tmp/podman.sock',
-                              remote_uri='ssh://user@host/run/podman/io.projectatomic.podman',
+                              remote_uri='ssh://user@host/run/podman/io.containers.podman',
                               identity_file='~/.ssh/id_rsa')
     """
 
     def __init__(self,
-                 uri='unix:/run/podman/io.projectatomic.podman',
-                 interface='io.projectatomic.podman',
+                 uri='unix:/run/podman/io.containers.podman',
+                 interface='io.containers.podman',
                  **kwargs):
         """Construct a podman varlink Client.
 
         uri from default systemd unit file.
-        interface from io.projectatomic.podman.varlink, do not change unless
+        interface from io.containers.podman.varlink, do not change unless
             you are a varlink guru.
         """
         self._client = BaseClient.factory(uri, interface, **kwargs)

@@ -49,7 +49,7 @@ attempts to connect to \f[C]\-\-remote\-socket\-path\f[] on local host.
 \f[B]\[en]remote\-socket\-path\f[]
 .PP
 Path on remote host for podman service's \f[C]AF_UNIX\f[] socket. The default is
-\f[C]/run/podman/io.projectatomic.podman\f[].
+\f[C]/run/podman/io.containers.podman\f[].
 .PP
 \f[B]\[en]identity\-file\f[]
 .PP
@@ -87,7 +87,7 @@ From command line option, for example: \[en]run\-dir
 This should provide Operators the ability to setup basic configurations
 and allow users to customize them.
 .PP
-\f[B]XDG_RUNTIME_DIR\f[] (\f[C]XDG_RUNTIME_DIR/io.projectatomic.podman\f[])
+\f[B]XDG_RUNTIME_DIR\f[] (\f[C]XDG_RUNTIME_DIR/io.containers.podman\f[])
 .PP
 Directory where pypodman stores non\-essential runtime files and other file
 objects (such as sockets, named pipes, \&...).
