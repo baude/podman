@@ -1,10 +1,10 @@
 package serviceapi
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 func registerNotFoundHandlers(r *mux.Router) error {
@@ -13,7 +13,6 @@ func registerNotFoundHandlers(r *mux.Router) error {
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
-	http.Error(w,
-		fmt.Sprintf("%d %s for '%s'", http.StatusNotFound, http.StatusText(http.StatusNotFound), r.URL.String()),
-		http.StatusNotFound)
+	log.Errorf("%d %s for %s:'%s'", http.StatusNotFound, http.StatusText(http.StatusNotFound), r.Method, r.URL.String())
+	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 }
