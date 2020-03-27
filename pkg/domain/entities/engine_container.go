@@ -30,4 +30,6 @@ type ContainerEngine interface {
 	VolumeRm(ctx context.Context, namesOrIds []string, opts VolumeRmOptions) ([]*VolumeRmReport, error)
 	VolumePrune(ctx context.Context, opts VolumePruneOptions) ([]*VolumePruneReport, error)
 	VolumeList(ctx context.Context, opts VolumeListOptions) ([]*VolumeListReport, error)
+
+	Events(ctx context.Context, opts EventsOptions) error
 }

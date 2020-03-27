@@ -3,6 +3,8 @@ package entities
 import (
 	"net"
 
+	"github.com/containers/libpod/libpod/events"
+
 	"github.com/containers/libpod/pkg/specgen"
 	"github.com/cri-o/ocicni/pkg/ocicni"
 )
@@ -41,4 +43,13 @@ type NetOptions struct {
 	PublishPorts []ocicni.PortMapping
 	StaticIP     *net.IP
 	StaticMAC    *net.HardwareAddr
+}
+
+type EventsOptions struct {
+	FromStart bool
+	EventChan chan *events.Event
+	Filter    []string
+	Stream    bool
+	Since     string
+	Until     string
 }
