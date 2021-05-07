@@ -171,6 +171,20 @@ func create(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	net, err := cmd.Flags().GetString("network")
+	if err != nil {
+		return err
+	}
+
+	// If there is no infra container and the network flag was not set or set to "" or "default"
+	// set the the network namespace back to the default value. This is needed because
+	// NetFlagsToNetOptions sets the nsmode to either slirp or bridge in such case and specgen
+	// complains when a nsmode other than default is used with no infra container.
+	if !createOptions.Infra && (!cmd.Flag("network").Changed || net == "" || net == "default") {
+		createOptions.Net.Network = specgen.Namespace{NSMode: specgen.Default}
+	}
+
 	if len(createOptions.Net.PublishPorts) > 0 {
 		if !createOptions.Infra {
 			return errors.Errorf("you must have an infra container to publish port bindings to the host")
