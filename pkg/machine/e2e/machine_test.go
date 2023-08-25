@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
+	pf "github.com/containers/podman/v4/cmd/podman/machine"
 	"github.com/containers/podman/v4/pkg/machine"
-	"github.com/containers/podman/v4/pkg/machine/qemu"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	tmpDir         = "/var/tmp"
+	tmpDir         = os.TempDir()
 	fqImageName    string
 	suiteImageName string
 )
@@ -44,28 +44,39 @@ func TestMachine(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	dd, err := qemu.VirtualizationProvider().NewDownload("")
+	provider, err := pf.GetSystemProvider()
+	if err != nil {
+		Fail("unable to create provider")
+	}
+
+	downloadLocation := os.Getenv("MACHINE_IMAGE")
+
+	dd, err := provider.NewDownload("")
 	if err != nil {
 		Fail("unable to create new download")
 	}
-	fcd, err := dd.GetFCOSDownload(defaultStream)
-	if err != nil {
-		Fail("unable to get virtual machine image")
+	if len(downloadLocation) < 1 {
+		fcd, err := dd.GetFCOSDownload(defaultStream)
+		if err != nil {
+			Fail("unable to get virtual machine image")
+		}
+		downloadLocation = fcd.Location
 	}
-	suiteImageName = strings.TrimSuffix(path.Base(fcd.Location), ".xz")
+	compressionExtension := fmt.Sprintf(".%s", provider.Compression().String())
+	suiteImageName = strings.TrimSuffix(path.Base(downloadLocation), compressionExtension)
 	fqImageName = filepath.Join(tmpDir, suiteImageName)
 	if _, err := os.Stat(fqImageName); err != nil {
 		if os.IsNotExist(err) {
-			getMe, err := url2.Parse(fcd.Location)
+			getMe, err := url2.Parse(downloadLocation)
 			if err != nil {
 				Fail(fmt.Sprintf("unable to create url for download: %q", err))
 			}
 			now := time.Now()
-			if err := machine.DownloadVMImage(getMe, suiteImageName, fqImageName+".xz"); err != nil {
+			if err := machine.DownloadVMImage(getMe, suiteImageName, fqImageName+compressionExtension); err != nil {
 				Fail(fmt.Sprintf("unable to download machine image: %q", err))
 			}
 			GinkgoWriter.Println("Download took: ", time.Since(now).String())
-			if err := machine.Decompress(fqImageName+".xz", fqImageName); err != nil {
+			if err := machine.Decompress(fqImageName+compressionExtension, fqImageName); err != nil {
 				Fail(fmt.Sprintf("unable to decompress image file: %q", err))
 			}
 		} else {
