@@ -1,6 +1,9 @@
 package e2e_test
 
 import (
+	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -27,23 +30,27 @@ var _ = Describe("run basic podman commands", func() {
 		session, err := mb.setName(name).setCmd(i.withImagePath(mb.imagePath).withNow()).run()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(session).To(Exit(0))
-
+		fmt.Print("machine should be running")
+		time.Sleep(20 * time.Second)
 		bm := basicMachine{}
 		imgs, err := mb.setCmd(bm.withPodmanCommand([]string{"images", "-q"})).run()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(imgs).To(Exit(0))
 		Expect(imgs.outputToStringSlice()).To(BeEmpty())
 
+		time.Sleep(5 * time.Second)
 		newImgs, err := mb.setCmd(bm.withPodmanCommand([]string{"pull", "quay.io/libpod/alpine_nginx"})).run()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(newImgs).To(Exit(0))
 		Expect(newImgs.outputToStringSlice()).To(HaveLen(1))
 
+		time.Sleep(5 * time.Second)
 		runAlp, err := mb.setCmd(bm.withPodmanCommand([]string{"run", "quay.io/libpod/alpine_nginx", "cat", "/etc/os-release"})).run()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(runAlp).To(Exit(0))
 		Expect(runAlp.outputToString()).To(ContainSubstring("Alpine Linux"))
 
+		time.Sleep(5 * time.Second)
 		rmCon, err := mb.setCmd(bm.withPodmanCommand([]string{"rm", "-a"})).run()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(rmCon).To(Exit(0))

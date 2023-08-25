@@ -450,7 +450,7 @@ func (m *HyperVMachine) SSH(name string, opts machine.SSHOptions) error {
 	if username == "" {
 		username = m.RemoteUsername
 	}
-	return machine.CommonSSH(username, m.IdentityPath, m.Name, m.Port, opts.Args)
+	return machine.CommonSSH("core", m.IdentityPath, m.Name, m.Port, opts.Args)
 }
 
 func (m *HyperVMachine) Start(name string, opts machine.StartOptions) error {

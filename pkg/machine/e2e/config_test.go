@@ -96,7 +96,7 @@ func newMB() (*machineTestBuilder, error) {
 	if err != nil {
 		return nil, err
 	}
-	mb.podmanBinary = filepath.Join(cwd, "../../../bin/podman-remote")
+	mb.podmanBinary = filepath.Join(cwd, podmanBinary)
 	if os.Getenv("PODMAN_BINARY") != "" {
 		mb.podmanBinary = os.Getenv("PODMAN_BINARY")
 	}
@@ -147,6 +147,7 @@ func (m *machineTestBuilder) runWithoutWait() (*machineSession, error) {
 }
 
 func (m *machineTestBuilder) run() (*machineSession, error) {
+	fmt.Println("--> ", m.podmanBinary, m.cmd)
 	return runWrapper(m.podmanBinary, m.cmd, m.timeout, true)
 }
 
