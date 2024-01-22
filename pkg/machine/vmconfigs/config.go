@@ -105,7 +105,7 @@ func (f fcosMachineImage) path() string {
 	return ""
 }
 
-type VMStubber interface { //nolint:interfacebloat
+type VMProvider interface { //nolint:interfacebloat
 	CreateVM(opts define.CreateVMOpts, mc *MachineConfig) error
 	GetHyperVisorVMs() ([]string, error)
 	MountType() VolumeMountType

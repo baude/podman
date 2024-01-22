@@ -47,14 +47,6 @@ const (
 	apiUpTimeout         = 20 * time.Second
 )
 
-// VfkitHelper describes the use of vfkit: cmdline and endpoint
-type VfkitHelper struct {
-	LogLevel        logrus.Level
-	Endpoint        string
-	VfkitBinaryPath *define.VMFile
-	VirtualMachine  *vfConfig.VirtualMachine
-}
-
 type MacMachine struct {
 	// ConfigPath is the fully qualified path to the configuration file
 	ConfigPath define.VMFile
@@ -294,10 +286,6 @@ func (m *MacMachine) Init(opts define.InitOptions) (bool, error) {
 	return err == nil, err
 }
 
-func (m *MacMachine) removeSystemConnections() error {
-	return connection.RemoveConnections(m.Name, fmt.Sprintf("%s-root", m.Name))
-}
-
 func (m *MacMachine) Inspect() (*machine.InspectInfo, error) {
 	vmState, err := m.Vfkit.State()
 	if err != nil {
@@ -335,74 +323,15 @@ func (m *MacMachine) Inspect() (*machine.InspectInfo, error) {
 	return &ii, nil
 }
 
-// collectFilesToDestroy retrieves the files that will be destroyed by `Remove`
-func (m *MacMachine) collectFilesToDestroy(opts machine.RemoveOptions) []string {
-	files := []string{}
-	if !opts.SaveIgnition {
-		files = append(files, m.IgnitionFile.GetPath())
-	}
+func (m *AppleHVStubber) Remove(mc *vmconfigs.MachineConfig) ([]string, func() error, error) {
+	mc.Lock()
+	defer mc.Unlock()
 
-	if !opts.SaveImage {
-		files = append(files, m.ImagePath.GetPath())
-	}
-
-	files = append(files, m.ConfigPath.GetPath())
-	return files
+	// TODO we could delete the vfkit pid/log files if we wanted to be thorough
+	return []string{}, func() error { return nil }, nil
 }
 
-func (m *MacMachine) Remove(name string, opts machine.RemoveOptions) (string, func() error, error) {
-	var (
-		files []string
-	)
-
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	vmState, err := m.Vfkit.State()
-	if err != nil {
-		return "", nil, err
-	}
-
-	if vmState == define.Running {
-		if !opts.Force {
-			return "", nil, &define.ErrVMRunningCannotDestroyed{Name: m.Name}
-		}
-		if err := m.Vfkit.Stop(true, true); err != nil {
-			return "", nil, err
-		}
-		defer func() {
-			if err := machine.CleanupGVProxy(m.GvProxyPid); err != nil {
-				logrus.Error(err)
-			}
-		}()
-	}
-
-	files = m.collectFilesToDestroy(opts)
-
-	confirmationMessage := "\nThe following files will be deleted:\n\n"
-	for _, msg := range files {
-		confirmationMessage += msg + "\n"
-	}
-
-	confirmationMessage += "\n"
-	return confirmationMessage, func() error {
-		connection.RemoveFilesAndConnections(files, m.Name, m.Name+"-root")
-		// TODO We will need something like this for applehv too i think
-		/*
-			// Remove the HVSOCK for networking
-			if err := m.NetworkHVSock.Remove(); err != nil {
-				logrus.Errorf("unable to remove registry entry for %s: %q", m.NetworkHVSock.KeyName, err)
-			}
-
-			// Remove the HVSOCK for events
-			if err := m.ReadyHVSock.Remove(); err != nil {
-				logrus.Errorf("unable to remove registry entry for %s: %q", m.NetworkHVSock.KeyName, err)
-			}
-		*/
-		return nil
-	}, nil
-}
-
+// deprecated
 func (m *MacMachine) writeConfig() error {
 	b, err := json.MarshalIndent(m, "", " ")
 	if err != nil {
@@ -411,6 +340,7 @@ func (m *MacMachine) writeConfig() error {
 	return os.WriteFile(m.ConfigPath.Path, b, 0644)
 }
 
+// deprecated
 func (m *MacMachine) setRootful(rootful bool) error {
 	if err := machine.SetRootful(rootful, m.Name, m.Name+"-root"); err != nil {
 		return err
@@ -474,34 +404,6 @@ func (m *MacMachine) Set(name string, opts machine.SetOptions) ([]error, error) 
 		lastErr := setErrors[len(setErrors)-1]
 		return setErrors[:len(setErrors)-1], lastErr
 	}
-}
-
-func (m *MacMachine) SSH(name string, opts machine.SSHOptions) error {
-	st, err := m.State(false)
-	if err != nil {
-		return err
-	}
-	if st != define.Running {
-		return fmt.Errorf("vm %q is not running", m.Name)
-	}
-	username := opts.Username
-	if username == "" {
-		username = m.RemoteUsername
-	}
-	return machine.CommonSSH(username, m.IdentityPath, m.Name, m.Port, opts.Args)
-}
-
-// deleteIgnitionSocket retrieves the ignition socket, deletes it, and returns a
-// pointer to the `VMFile`
-func (m *MacMachine) deleteIgnitionSocket() (*define.VMFile, error) {
-	ignitionSocket, err := m.getIgnitionSock()
-	if err != nil {
-		return nil, err
-	}
-	if err := ignitionSocket.Delete(); err != nil {
-		return nil, err
-	}
-	return ignitionSocket, nil
 }
 
 // getIgnitionVsockDeviceAsCLI retrieves the ignition vsock device and converts
@@ -574,7 +476,7 @@ func (m *MacMachine) Start(name string, opts machine.StartOptions) error {
 	}
 
 	if _, err := m.getRuntimeDir(); err != nil {
-	     return err
+		return err
 	}
 
 	// TODO handle returns from startHostNetworking
@@ -730,93 +632,18 @@ func (m *MacMachine) Start(name string, opts machine.StartOptions) error {
 	return nil
 }
 
-func (m *MacMachine) State(_ bool) (define.Status, error) {
-	vmStatus, err := m.Vfkit.State()
+func (m *AppleHVStubber) State(mc *vmconfigs.MachineConfig, _ bool) (define.Status, error) {
+	vmStatus, err := mc.AppleHypervisor.Vfkit.State()
 	if err != nil {
 		return "", err
 	}
 	return vmStatus, nil
 }
 
-func (m *MacMachine) Stop(name string, opts machine.StopOptions) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	vmState, err := m.State(false)
-	if err != nil {
-		return err
-	}
-
-	if vmState != define.Running {
-		return nil
-	}
-
-	defer func() {
-		if err := machine.CleanupGVProxy(m.GvProxyPid); err != nil {
-			logrus.Error(err)
-		}
-	}()
-	if err := m.Vfkit.Stop(false, true); err != nil {
-		return err
-	}
-
-	// keep track of last up
-	m.LastUp = time.Now()
-	return m.writeConfig()
-}
-
-// getVMConfigPath is a simple wrapper for getting the fully-qualified
-// path of the vm json config file.  It should be used to get conformity
-func getVMConfigPath(configDir, vmName string) string {
-	return filepath.Join(configDir, fmt.Sprintf("%s.json", vmName))
-}
-
-func (m *MacMachine) loadFromFile() (*MacMachine, error) {
-	if len(m.Name) < 1 {
-		return nil, errors.New("encountered machine with no name")
-	}
-
-	jsonPath, err := m.jsonConfigPath()
-	if err != nil {
-		return nil, err
-	}
-
-	mm, err := loadMacMachineFromJSON(jsonPath)
-	if err != nil {
-		return nil, err
-	}
-
-	lock, err := machine.GetLock(mm.Name, vmtype)
-	if err != nil {
-		return nil, err
-	}
-	mm.lock = lock
-
-	return mm, nil
-}
-
-func loadMacMachineFromJSON(fqConfigPath string) (*MacMachine, error) {
-	b, err := os.ReadFile(fqConfigPath)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			name := strings.TrimSuffix(filepath.Base(fqConfigPath), ".json")
-			return nil, fmt.Errorf("%s: %w", name, define.ErrNoSuchVM)
-		}
-		return nil, err
-	}
-	mm := new(MacMachine)
-	if err := json.Unmarshal(b, mm); err != nil {
-		return nil, err
-	}
-	return mm, nil
-}
-
-func (m *MacMachine) jsonConfigPath() (string, error) {
-	configDir, err := machine.GetConfDir(define.AppleHvVirt)
-	if err != nil {
-		return "", err
-	}
-	return getVMConfigPath(configDir, m.Name), nil
+func (m *AppleHVStubber) StopVM(mc *vmconfigs.MachineConfig, _ bool) error {
+	mc.Lock()
+	defer mc.Unlock()
+	return mc.AppleHypervisor.Vfkit.Stop(false, true)
 }
 
 func getVMInfos() ([]*machine.ListResponse, error) {
@@ -1059,72 +886,17 @@ func (m *MacMachine) forwardSocketPath() (*define.VMFile, error) {
 
 // resizeDisk uses os truncate to resize (only larger) a raw disk.  the input size
 // is assumed GiB
-func (m *MacMachine) resizeDisk(newSize strongunits.GiB) error {
-	if uint64(newSize) < m.DiskSize {
-		// TODO this error needs to be changed to the common error.  would do now but the PR for the common
-		// error has not merged
-		return fmt.Errorf("invalid disk size %d: new disk must be larger than %dGB", newSize, m.DiskSize)
-	}
-	logrus.Debugf("resizing %s to %d bytes", m.ImagePath.GetPath(), newSize.ToBytes())
+func resizeDisk(mc *vmconfigs.MachineConfig, newSize strongunits.GiB) error {
+	logrus.Debugf("resizing %s to %d bytes", mc.ImagePath.GetPath(), newSize.ToBytes())
 	// seems like os.truncate() is not very performant with really large files
 	// so exec'ing out to the command truncate
 	size := fmt.Sprintf("%dG", newSize)
-	c := exec.Command("truncate", "-s", size, m.ImagePath.GetPath())
+	c := exec.Command("truncate", "-s", size, mc.ImagePath.GetPath())
 	if logrus.IsLevelEnabled(logrus.DebugLevel) {
 		c.Stderr = os.Stderr
 		c.Stdout = os.Stdout
 	}
 	return c.Run()
-}
-
-// isFirstBoot returns a bool reflecting if the machine has been booted before
-func (m *MacMachine) isFirstBoot() (bool, error) {
-	never, err := time.Parse(time.RFC3339, "0001-01-01T00:00:00Z")
-	if err != nil {
-		return false, err
-	}
-	return m.LastUp == never, nil
-}
-
-func (m *MacMachine) getIgnitionSock() (*define.VMFile, error) {
-	dataDir, err := machine.GetDataDir(define.AppleHvVirt)
-	if err != nil {
-		return nil, err
-	}
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		if !errors.Is(err, os.ErrExist) {
-			return nil, err
-		}
-	}
-	return define.NewMachineFile(filepath.Join(dataDir, ignitionSocketName), nil)
-}
-
-func (m *MacMachine) getRuntimeDir() (string, error) {
-	tmpDir, ok := os.LookupEnv("TMPDIR")
-	if !ok {
-		tmpDir = "/tmp"
-	}
-	rtd := filepath.Join(tmpDir, "podman")
-	logrus.Debugf("creating runtimeDir: %s", rtd)
-	if err := os.MkdirAll(rtd, 0755); err != nil {
-		return "", err
-	}
-
-	return rtd, nil
-}
-
-func (m *MacMachine) userGlobalSocketLink() (string, error) {
-	path, err := machine.GetDataDir(define.AppleHvVirt)
-	if err != nil {
-		logrus.Errorf("Resolving data dir: %s", err.Error())
-		return "", err
-	}
-	// User global socket is located in parent directory of machine dirs (one per user)
-	return filepath.Join(filepath.Dir(path), "podman.sock"), err
-}
-
-func (m *MacMachine) isIncompatible() bool {
-	return m.UID == -1
 }
 
 func generateSystemDFilesForVirtiofsMounts(mounts []machine.VirtIoFs) []ignition.Unit {

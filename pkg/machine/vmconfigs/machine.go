@@ -10,14 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containers/podman/v4/pkg/machine/connection"
-
-	"github.com/sirupsen/logrus"
-
 	define2 "github.com/containers/podman/v4/libpod/define"
+	"github.com/containers/podman/v4/pkg/machine/connection"
 	"github.com/containers/podman/v4/pkg/machine/define"
 	"github.com/containers/podman/v4/pkg/machine/lock"
 	"github.com/containers/podman/v4/utils"
+	"github.com/sirupsen/logrus"
 )
 
 /*
