@@ -87,8 +87,6 @@ github.com/containers/conmon v2.0.20+incompatible h1:YbCVSFSCqFjjVwHTPINGdMX1F6J
 github.com/containers/conmon v2.0.20+incompatible/go.mod h1:hgwZ2mtuDrppv78a/cOBNiCm6O0UMWGx1mu7P00nu5I=
 github.com/containers/gvisor-tap-vsock v0.8.0 h1:Z8ZEWb+Lio0d+lXexONdUWT4rm9lF91vH0g3ARnMy7o=
 github.com/containers/gvisor-tap-vsock v0.8.0/go.mod h1:LVwnMiNvhxyGfhaMEQcXKJhNnN4h8woB9U3wf8rYOPc=
-github.com/containers/image/v5 v5.33.0 h1:6oPEFwTurf7pDTGw7TghqGs8K0+OvPtY/UyzU0B2DfE=
-github.com/containers/image/v5 v5.33.0/go.mod h1:T7HpASmvnp2H1u4cyckMvCzLuYgpD18dSmabSw0AcHk=
 github.com/containers/libhvee v0.9.0 h1:5UxJMka1lDfxTeITA25Pd8QVVttJAG43eQS1Getw1tc=
 github.com/containers/libhvee v0.9.0/go.mod h1:p44VJd8jMIx3SRN1eM6PxfCEwXQE0lJ0dQppCAlzjPQ=
 github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 h1:Qzk5C6cYglewc+UyGf6lc8Mj2UaPTHy/iF2De0/77CA=
