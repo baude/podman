@@ -104,7 +104,7 @@ func (r *Runtime) Import(ctx context.Context, path string, options *ImportOption
 		return "", err
 	}
 
-	c, err := r.NewCopier(&options.CopyOptions)
+	c, err := r.newCopier(&options.CopyOptions)
 	if err != nil {
 		return "", err
 	}

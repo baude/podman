@@ -206,13 +206,22 @@ func getDockerAuthConfig(name, passwd, creds, idToken string) (*types.DockerAuth
 	}
 }
 
-// NewCopier creates a copier.  Note that fields in options *may* overwrite the
+type Copier interface {
+	Copy(ctx context.Context, source, destination types.ImageReference) ([]byte, error)
+	Close() error
+}
+
+// NewCopier is a simple, exported wrapper for newCopier
+func NewCopier(options *CopyOptions, sc *types.SystemContext) (*copier, error) {
+	return newCopier(options, sc)
+}
+
+// newCopier creates a copier.  Note that fields in options *may* overwrite the
 // counterparts of the specified system context.  Please make sure to call
 // `(*copier).close()`.
-func (r *Runtime) NewCopier(options *CopyOptions) (*copier, error) {
+func newCopier(options *CopyOptions, sc *types.SystemContext) (*copier, error) {
 	c := copier{extendTimeoutSocket: options.extendTimeoutSocket}
-	c.systemContext = r.systemContextCopy()
-
+	c.systemContext = sc
 	if options.SourceLookupReferenceFunc != nil {
 		c.sourceLookup = options.SourceLookupReferenceFunc
 	}
@@ -323,6 +332,15 @@ func (r *Runtime) NewCopier(options *CopyOptions) (*copier, error) {
 	}
 
 	return &c, nil
+
+}
+
+// newCopier creates a copier.  Note that fields in options *may* overwrite the
+// counterparts of the specified system context.  Please make sure to call
+// `(*copier).close()`.
+func (r *Runtime) newCopier(options *CopyOptions) (*copier, error) {
+	sc := r.systemContextCopy()
+	return newCopier(options, sc)
 }
 
 // Close open resources.
@@ -446,6 +464,7 @@ func (c *copier) Copy(ctx context.Context, source, destination types.ImageRefere
 			opts.DestinationCtx.DockerInsecureSkipTLSVerify = value
 		}
 
+		opts.ImageListSelection = copy.CopyAllImages
 		copiedManifest, err := copy.Image(ctx, c.policyContext, destination, source, &opts)
 		if err == nil {
 			returnManifest = copiedManifest

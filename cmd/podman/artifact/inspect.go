@@ -2,21 +2,21 @@ package artifact
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/containers/podman/v5/cmd/podman/registry"
+	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/spf13/cobra"
 )
 
 var (
 	inspectCmd = &cobra.Command{
-		Use:               "inspect [options] [ARTIFACT...]",
-		Short:             "Inspect an OCI artifact",
-		Long:              "Provide details on an OCI artifact",
-		RunE:              inspect,
-		PersistentPreRunE: devOnly,
-		Args:              cobra.MinimumNArgs(1),
-		Example:           `podman artifact inspect quay.io/myimage/myartifact:latest`,
-		// TODO Autocomplete function needs to be done
+		Use:     "inspect [options] [ARTIFACT...]",
+		Short:   "Inspect an OCI artifact",
+		Long:    "Provide details on an OCI artifact",
+		RunE:    inspect,
+		Args:    cobra.MinimumNArgs(1),
+		Example: `podman artifact inspect quay.io/myimage/myartifact:latest`,
 	}
 	inspectFlag = inspectFlagType{}
 )
@@ -43,14 +43,27 @@ func init() {
 }
 
 func inspect(cmd *cobra.Command, args []string) error {
-	return errNotImplemented()
+	if inspectFlag.remote {
+		return fmt.Errorf("not implemented")
+	}
+
+	if inspectFlag.format != "" {
+		return fmt.Errorf("not implemented")
+	}
+
+	artifactOptions := entities.ArtifactInspectOptions{}
+	inspectData, err := registry.ImageEngine().ArtifactInspect(registry.GetContext(), args[0], artifactOptions)
+	if err != nil {
+		return err
+	}
+	return printJSON(inspectData)
 }
 
-func devOnly(_ *cobra.Command, _ []string) error {
-	fmt.Printf("\n** Artifacts are in development.  It can change at any time. **\n\n")
-	return nil
-}
-
-func errNotImplemented() error {
-	return fmt.Errorf("not implemented yet")
+func printJSON(data interface{}) error {
+	enc := json.NewEncoder(os.Stdout)
+	// by default, json marshallers will force utf=8 from
+	// a string.
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "     ")
+	return enc.Encode(data)
 }

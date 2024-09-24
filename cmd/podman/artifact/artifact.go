@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	json = registry.JSONLibrary()
 	// Command: podman _artifact_
 	artifactCmd = &cobra.Command{
 		Use:   "artifact",
