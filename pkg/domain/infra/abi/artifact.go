@@ -89,3 +89,16 @@ func (ir *ImageEngine) ArtifactPush(ctx context.Context, name string, opts entit
 	err = artStore.Push(ctx, name, name)
 	return &entities.ArtifactPushReport{}, err
 }
+func (ir *ImageEngine) ArtifactAdd(ctx context.Context, path, name string, opts entities.ArtifactAddoptions) (*entities.ArtifactAddReport, error) {
+	artStore, err := libartifact.NewArtifactStore(opts.StorePath, ir.Libpod.SystemContext())
+	if err != nil {
+		return nil, err
+	}
+	newBlobDigest, err := artStore.Add(ctx, name, path)
+	if err != nil {
+		return nil, err
+	}
+	return &entities.ArtifactAddReport{
+		NewBlobDigest: newBlobDigest,
+	}, nil
+}

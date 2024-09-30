@@ -13,6 +13,8 @@ import (
 	"github.com/containers/image/v5/types"
 	"github.com/containers/storage"
 	"github.com/opencontainers/go-digest"
+	spec "github.com/opencontainers/image-spec/specs-go"
+	specV1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 type ArtifactStore struct {
@@ -119,22 +121,57 @@ func (a ArtifactStore) Push(ctx context.Context, src, dest string) error {
 	return copyer.Close()
 }
 
-func (a ArtifactStore) Add(ctx context.Context, src, dest string) error {
-	if _, err := os.Stat(src); err != nil {
-		// I don't think that handling file not found here specifically
-		// and will return the error as is for the caller to handle
-		return err
-	}
-	destRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", dest))
+func (as ArtifactStore) Add(ctx context.Context, dest string, path, artifactType string) (*digest.Digest, error) {
+	ir, err := layout.NewReference(as.storePath, dest)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_ = destRef
-	// create a manifest with the correct store
-	//list := manifests.Create()
+	imageDest, err := ir.NewImageDestination(ctx, as.SystemContext)
+	if err != nil {
+		return nil, err
+	}
 
-	// add artifact to the manifest
-	return err
+	newBlobDigest, newBlobSize, err := layout.PutBlobFromLocalFile(ctx, imageDest, path)
+	if err != nil {
+		return nil, err
+	}
+
+	var annotations = map[string]string{}
+	annotations[specV1.AnnotationTitle] = filepath.Base(path)
+	foo := specV1.Descriptor{
+		MediaType:    "",
+		Digest:       newBlobDigest,
+		Size:         newBlobSize,
+		URLs:         nil,
+		Annotations:  annotations,
+		Data:         nil,
+		Platform:     nil,
+		ArtifactType: artifactType,
+	}
+
+	configBlob := types.BlobInfo{
+		Digest:               newBlobDigest,
+		Size:                 newBlobSize,
+		URLs:                 nil,
+		Annotations:          nil,
+		MediaType:            "",
+		CompressionOperation: 0,
+		CompressionAlgorithm: nil,
+		CryptoOperation:      0,
+	}
+
+	manifest := specV1.Manifest{
+		Versioned: spec.Versioned{SchemaVersion: 2},
+		MediaType: specV1.MediaTypeImageManifest,
+		Config: specV1.Descriptor{
+			MediaType: specV1.MediaTypeEmptyJSON,
+			Digest:    configBlob.Digest,
+			Size:      configBlob.Size,
+		},
+		Layers: []specV1.Descriptor{foo},
+	}
+
+	return &newBlobDigest, err
 }
 
 // TotalSize returns the total bytes of the all the artifact layers

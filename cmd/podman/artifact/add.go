@@ -2,6 +2,7 @@ package artifact
 
 import (
 	"fmt"
+	"github.com/containers/podman/v5/pkg/domain/entities"
 
 	"github.com/containers/podman/v5/cmd/podman/registry"
 	"github.com/spf13/cobra"
@@ -39,5 +40,10 @@ func init() {
 func add(cmd *cobra.Command, args []string) error {
 	//_, err := registry.ImageEngine().ArtifactRm(registry.GetContext(), args[0], entities.ArtifactRemoveOptions{})
 	//return err
-	return fmt.Errorf("not implemented")
+	report, err := registry.ImageEngine().ArtifactAdd(registry.Context(), args[0], args[1], entities.ArtifactAddoptions{})
+	if err != nil {
+		return err
+	}
+	fmt.Println(report.NewBlobDigest)
+	return nil
 }

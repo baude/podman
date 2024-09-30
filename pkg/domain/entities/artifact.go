@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"github.com/opencontainers/go-digest"
 	"io"
 
 	"github.com/containers/image/v5/types"
@@ -8,7 +9,9 @@ import (
 	"github.com/containers/podman/v5/pkg/libartifact"
 )
 
-type ArtifactAddoptions struct{}
+type ArtifactAddoptions struct {
+	StorePath string
+}
 
 type ArtifactInspectOptions struct {
 	Remote    bool
@@ -62,6 +65,10 @@ type ArtifactInspectReport struct {
 
 type ArtifactListReport struct {
 	*libartifact.Artifact
+}
+
+type ArtifactAddReport struct {
+	NewBlobDigest *digest.Digest
 }
 
 type ArtifactRemoveReport struct{}
