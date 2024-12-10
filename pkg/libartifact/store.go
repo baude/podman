@@ -163,7 +163,7 @@ func (as ArtifactStore) Add(ctx context.Context, dest string, path, artifactType
 	}
 
 	// get the new artifact into the local store
-	newBlobDigest, newBlobSize, err := layout.PutBlobFromLocalFile(ctx, imageDest, path)
+	newBlobDigest, newBlobSize, err := layout.PutBlobFromLocalFile(ctx, imageDest, path, nil)
 	if err != nil {
 		return nil, err
 	}
