@@ -18,6 +18,7 @@ import (
 	"github.com/containers/image/v5/internal/private"
 	"github.com/containers/image/v5/internal/putblobdigest"
 	"github.com/containers/image/v5/types"
+	reflinkCopy "github.com/containers/storage/drivers/copy"
 	"github.com/containers/storage/pkg/fileutils"
 	digest "github.com/opencontainers/go-digest"
 	imgspec "github.com/opencontainers/image-spec/specs-go"
@@ -303,22 +304,33 @@ func (d *ociImageDestination) CommitWithOptions(ctx context.Context, options pri
 	return os.WriteFile(d.ref.indexPath(), indexJSON, 0644)
 }
 
-// tryHardlinkLocalFile attempts to hardlink the specified file and digest it.
-func tryHardlinkLocalFile(dest *ociImageDestination, file string) (private.UploadedBlob, bool, error) {
-	blobFile, err := os.CreateTemp(dest.ref.dir, "oci-put-blob")
+// tryReflinkLocalFile attempts to reflink the specified file and digest it.
+// If relinking does not work, reset to doing a verbatim copy of the file.
+func tryReflinkLocalFile(dest *ociImageDestination, file string) (private.UploadedBlob, bool, error) {
+	fInfo, err := os.Stat(file)
 	if err != nil {
 		return private.UploadedBlob{}, false, err
 	}
 
-	// Remove the file for os.Link() to work.
-	blobFile.Close()
-	os.Remove(blobFile.Name())
-	if err := os.Link(file, blobFile.Name()); err != nil {
-		// Fallback iff Link has failed.
-		return private.UploadedBlob{}, true, err
+	blobFile, err := os.CreateTemp(dest.ref.dir, "oci-put-blob")
+	if err != nil {
+		return private.UploadedBlob{}, false, err
+	}
+	blobName := blobFile.Name()
+
+	copyRange := false
+	copyClone := true
+	err = reflinkCopy.CopyRegularToFile(file, blobFile, fInfo, &copyRange, &copyClone)
+	if err != nil {
+		return private.UploadedBlob{}, false, err
 	}
 
-	blobFile, err = os.Open(blobFile.Name())
+	_, err = blobFile.Seek(0, 0)
+	if err != nil {
+		return private.UploadedBlob{}, false, err
+	}
+
+	blobFile, err = os.Open(blobName)
 	if err != nil {
 		return private.UploadedBlob{}, false, err
 	}
@@ -337,7 +349,7 @@ func tryHardlinkLocalFile(dest *ociImageDestination, file string) (private.Uploa
 
 	// need to explicitly close the file, since a rename won't otherwise work on Windows
 	blobFile.Close()
-	if err := os.Rename(blobFile.Name(), blobPath); err != nil {
+	if err := os.Rename(blobName, blobPath); err != nil {
 		return private.UploadedBlob{}, false, err
 	}
 
@@ -348,19 +360,20 @@ func tryHardlinkLocalFile(dest *ociImageDestination, file string) (private.Uploa
 	return private.UploadedBlob{Digest: blobDigest, Size: fileInfo.Size()}, false, nil
 }
 
+// PutBlobFromLocalFileOptions is unused but may receive functionality in the future.
+type PutBlobFromLocalFileOptions struct{}
+
 // PutBlobFromLocalFile arranges the data from path to be used as blob with digest.
 // It computes, and returns, the digest and size of the used file.
 //
 // This function can be used instead of dest.PutBlob() where the ImageDestination requires PutBlob() to be called.
-func PutBlobFromLocalFile(ctx context.Context, dest types.ImageDestination, file string) (digest.Digest, int64, error) {
+func PutBlobFromLocalFile(ctx context.Context, dest types.ImageDestination, file string, options *PutBlobFromLocalFileOptions) (digest.Digest, int64, error) {
 	d, ok := dest.(*ociImageDestination)
 	if !ok {
 		return "", -1, errors.New("internal error: PutBlobFromLocalFile called with a non-oci: destination")
 	}
 
-	// First try to hardlink the input file. We still have to fully read it to
-	// create the digest but that's favorable over duplicating it.
-	uploaded, fallback, err := tryHardlinkLocalFile(d, file)
+	uploaded, fallback, err := tryReflinkLocalFile(d, file)
 	if err == nil {
 		return uploaded.Digest, uploaded.Size, nil
 	} else if fallback {
