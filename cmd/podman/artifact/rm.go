@@ -1,6 +1,7 @@
 package artifact
 
 import (
+	"github.com/containers/podman/v5/cmd/podman/common"
 	"github.com/containers/podman/v5/cmd/podman/registry"
 	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/spf13/cobra"
@@ -8,13 +9,14 @@ import (
 
 var (
 	rmCmd = &cobra.Command{
-		Use:     "remove [options] [ARTIFACT...]",
-		Short:   "Remove an OCI artifact",
-		Long:    "Remove an OCI from local storage",
-		RunE:    rm,
-		Aliases: []string{"rm"},
-		Args:    cobra.MinimumNArgs(1),
-		Example: `podman artifact remove quay.io/myimage/myartifact:latest`,
+		Use:               "remove [options] ARTIFACT",
+		Short:             "Remove an OCI artifact",
+		Long:              "Remove an OCI from local storage",
+		RunE:              rm,
+		Aliases:           []string{"rm"},
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: common.AutocompleteArtifacts,
+		Example:           `podman artifact remove quay.io/myimage/myartifact:latest`,
 	}
 	rmFlag = rmFlagType{}
 )

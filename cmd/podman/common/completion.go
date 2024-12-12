@@ -314,6 +314,31 @@ func getNetworks(cmd *cobra.Command, toComplete string, cType completeType) ([]s
 	return suggestions, cobra.ShellCompDirectiveNoFileComp
 }
 
+func getArtifacts(cmd *cobra.Command, toComplete string) ([]string, cobra.ShellCompDirective) {
+	suggestions := []string{}
+	listOptions := entities.ArtifactListOptions{}
+
+	engine, err := setupImageEngine(cmd)
+	if err != nil {
+		cobra.CompErrorln(err.Error())
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	artifacts, err := engine.ArtifactList(registry.GetContext(), listOptions)
+	if err != nil {
+		cobra.CompErrorln(err.Error())
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	for _, artifact := range artifacts {
+		splitsees := strings.SplitN(artifact.List.Reference.StringWithinTransport(), ":", 2)
+		name := splitsees[1]
+		if strings.HasPrefix(name, toComplete) {
+			suggestions = append(suggestions, name)
+		}
+	}
+	return suggestions, cobra.ShellCompDirectiveNoFileComp
+}
+
 func fdIsNotDir(f *os.File) bool {
 	stat, err := f.Stat()
 	if err != nil {
@@ -489,6 +514,24 @@ func getBoolCompletion(_ string) ([]string, cobra.ShellCompDirective) {
 }
 
 /* Autocomplete Functions for cobra ValidArgsFunction */
+
+func AutocompleteArtifacts(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if !validCurrentCmdLine(cmd, args, toComplete) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	return getArtifacts(cmd, toComplete)
+}
+
+func AutocompleteArtifactAdd(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	if !validCurrentCmdLine(cmd, args, toComplete) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	if len(args) == 0 {
+		// first argument accepts file path
+		return nil, cobra.ShellCompDirectiveDefault
+	}
+	return getArtifacts(cmd, toComplete)
+}
 
 // AutocompleteContainers - Autocomplete all container names.
 func AutocompleteContainers(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

@@ -8,6 +8,7 @@ import (
 	"github.com/containers/common/pkg/auth"
 	"github.com/containers/common/pkg/completion"
 	"github.com/containers/image/v5/types"
+	"github.com/containers/podman/v5/cmd/podman/common"
 	"github.com/containers/podman/v5/cmd/podman/registry"
 	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/containers/podman/v5/pkg/util"
@@ -28,13 +29,14 @@ var (
 	pullDescription = `Pulls an artifact from a registry and stores it locally.`
 
 	pullCmd = &cobra.Command{
-		Use:   "pull [options] [ARTIFACT...]",
+		Use:   "pull [options] ARTIFACT",
 		Short: "Pull an OCI artifact",
 		Long:  pullDescription,
 		RunE:  artifactPull,
 		//PersistentPreRunE: devOnly,
-		Args:    cobra.MaximumNArgs(1),
-		Example: `podman artifact pull quay.io/myimage/myartifact:latest`,
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: common.AutocompleteArtifacts,
+		Example:           `podman artifact pull quay.io/myimage/myartifact:latest`,
 		// TODO Autocomplete function needs to be done
 	}
 )

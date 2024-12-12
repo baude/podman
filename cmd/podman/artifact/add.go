@@ -2,20 +2,23 @@ package artifact
 
 import (
 	"fmt"
+
 	"github.com/containers/podman/v5/pkg/domain/entities"
 
+	"github.com/containers/podman/v5/cmd/podman/common"
 	"github.com/containers/podman/v5/cmd/podman/registry"
 	"github.com/spf13/cobra"
 )
 
 var (
 	addCmd = &cobra.Command{
-		Use:     "add [options] PATH ARTIFACT",
-		Short:   "Add an OCI artifact to the local store",
-		Long:    "Add an OCI artifact to the local store from the local filesystem",
-		RunE:    add,
-		Args:    cobra.MinimumNArgs(2),
-		Example: `podman artifact add /tmp/foobar.txt quay.io/myimage/myartifact:latest`,
+		Use:               "add [options] PATH ARTIFACT",
+		Short:             "Add an OCI artifact to the local store",
+		Long:              "Add an OCI artifact to the local store from the local filesystem",
+		RunE:              add,
+		Args:              cobra.ExactArgs(2),
+		ValidArgsFunction: common.AutocompleteArtifactAdd,
+		Example:           `podman artifact add /tmp/foobar.txt quay.io/myimage/myartifact:latest`,
 	}
 	addFlag = addFlagType{}
 )

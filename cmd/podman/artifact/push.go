@@ -33,13 +33,14 @@ var (
 	pushDescription = `Push an OCI artifact from local storage to an image registry`
 
 	pushCmd = &cobra.Command{
-		Use:   "push [options] [ARTIFACT...]",
+		Use:   "push [options] ARTIFACT.",
 		Short: "Push an OCI artifact",
 		Long:  pullDescription,
 		RunE:  artifactPush,
 		//PersistentPreRunE: devOnly,
-		Args:    cobra.MaximumNArgs(1),
-		Example: `podman artifact push quay.io/myimage/myartifact:latest`,
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: common.AutocompleteArtifacts,
+		Example:           `podman artifact push quay.io/myimage/myartifact:latest`,
 		// TODO Autocomplete function needs to be done
 	}
 )

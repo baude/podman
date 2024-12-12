@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/containers/common/pkg/completion"
 	"github.com/containers/podman/v5/cmd/podman/registry"
 	"github.com/containers/podman/v5/pkg/domain/entities"
 	units "github.com/docker/go-units"
@@ -14,13 +15,14 @@ import (
 
 var (
 	ListCmd = &cobra.Command{
-		Use:     "list [options]",
-		Aliases: []string{"ls"},
-		Short:   "List OCI artifacts",
-		Long:    "List OCI artifacts in local store",
-		RunE:    list,
-		Args:    cobra.NoArgs,
-		Example: `podman artifact ls`,
+		Use:               "list [options]",
+		Aliases:           []string{"ls"},
+		Short:             "List OCI artifacts",
+		Long:              "List OCI artifacts in local store",
+		RunE:              list,
+		Args:              cobra.NoArgs,
+		ValidArgsFunction: completion.AutocompleteNone,
+		Example:           `podman artifact ls`,
 	}
 	ListFlag = inspectFlagType{}
 )

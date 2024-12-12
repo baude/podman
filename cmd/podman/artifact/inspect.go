@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/containers/podman/v5/cmd/podman/common"
 	"github.com/containers/podman/v5/cmd/podman/registry"
 	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/spf13/cobra"
@@ -11,12 +12,13 @@ import (
 
 var (
 	inspectCmd = &cobra.Command{
-		Use:     "inspect [options] [ARTIFACT...]",
-		Short:   "Inspect an OCI artifact",
-		Long:    "Provide details on an OCI artifact",
-		RunE:    inspect,
-		Args:    cobra.MinimumNArgs(1),
-		Example: `podman artifact inspect quay.io/myimage/myartifact:latest`,
+		Use:               "inspect [options] [ARTIFACT...]",
+		Short:             "Inspect an OCI artifact",
+		Long:              "Provide details on an OCI artifact",
+		RunE:              inspect,
+		Args:              cobra.MinimumNArgs(1),
+		ValidArgsFunction: common.AutocompleteArtifacts,
+		Example:           `podman artifact inspect quay.io/myimage/myartifact:latest`,
 	}
 	inspectFlag = inspectFlagType{}
 )
