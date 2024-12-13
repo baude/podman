@@ -59,6 +59,8 @@ type ArtifactInspectReport struct {
 }
 
 type ArtifactListReport struct {
+	Name string
+	Size int64
 	*libartifact.Artifact
 }
 

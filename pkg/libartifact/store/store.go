@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/containers/podman/v5/pkg/libartifact"
-	types2 "github.com/containers/podman/v5/pkg/libartifact/types"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +14,8 @@ import (
 	"github.com/containers/image/v5/oci/layout"
 	"github.com/containers/image/v5/transports/alltransports"
 	"github.com/containers/image/v5/types"
+	"github.com/containers/podman/v5/pkg/libartifact"
+	types2 "github.com/containers/podman/v5/pkg/libartifact/types"
 	"github.com/containers/storage"
 	"github.com/opencontainers/go-digest"
 	specV1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -282,6 +282,10 @@ func (as ArtifactStore) getArtifacts(ctx context.Context, _ *types2.GetArtifactO
 		artifact := libartifact.Artifact{
 			List:      l,
 			Manifests: manifests,
+		}
+
+		if err != nil {
+			return nil, err
 		}
 		al = append(al, &artifact)
 	}

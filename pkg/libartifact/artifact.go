@@ -1,6 +1,7 @@
 package libartifact
 
 import (
+	"errors"
 	"fmt"
 	"github.com/containers/image/v5/manifest"
 	"github.com/containers/image/v5/oci/layout"
@@ -21,6 +22,16 @@ func (a Artifact) TotalSize() int64 {
 		}
 	}
 	return s
+}
+
+// GetName returns the "name" or "image reference" of the artifact
+func (a Artifact) Name() (string, error) {
+	if val, ok := a.List.ManifestDescriptor.Annotations[types.AnnotatedName]; ok {
+		return val, nil
+	}
+	// We don't have a concept of None for artifacts yet, but if we do,
+	// then we should probably not error but return `None`
+	return "", errors.New("artifact is unnamed")
 }
 
 type ArtifactList []*Artifact
