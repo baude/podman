@@ -5,6 +5,7 @@ import (
 
 	"github.com/containers/image/v5/types"
 	encconfig "github.com/containers/ocicrypt/config"
+	entityTypes "github.com/containers/podman/v5/pkg/domain/entities/types"
 	"github.com/containers/podman/v5/pkg/libartifact"
 	"github.com/opencontainers/go-digest"
 )
@@ -67,10 +68,7 @@ type ArtifactPullReport struct{}
 
 type ArtifactPushReport struct{}
 
-type ArtifactInspectReport struct {
-	*libartifact.Artifact
-	Digest string
-}
+type ArtifactInspectReport = entityTypes.ArtifactInspectReport
 
 type ArtifactListReport struct {
 	*libartifact.Artifact
