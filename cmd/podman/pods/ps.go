@@ -33,6 +33,8 @@ var (
 		RunE:              pods,
 		Args:              validate.NoArgs,
 		ValidArgsFunction: completion.AutocompleteNone,
+		Example: `podman pod ps
+podman pod ls`,
 	}
 )
 
@@ -47,18 +49,23 @@ func init() {
 		Command: psCmd,
 		Parent:  podCmd,
 	})
-	flags := psCmd.Flags()
+	listFlagSet(psCmd)
+	validate.AddLatestFlag(psCmd, &psInput.Latest)
+}
+
+func listFlagSet(cmd *cobra.Command) {
+	flags := cmd.Flags()
 	flags.BoolVar(&psInput.CtrNames, "ctr-names", false, "Display the container names")
 	flags.BoolVar(&psInput.CtrIds, "ctr-ids", false, "Display the container UUIDs. If no-trunc is not set they will be truncated")
 	flags.BoolVar(&psInput.CtrStatus, "ctr-status", false, "Display the container status")
 
 	filterFlagName := "filter"
 	flags.StringArrayVarP(&inputFilters, filterFlagName, "f", []string{}, "Filter output based on conditions given")
-	_ = psCmd.RegisterFlagCompletionFunc(filterFlagName, common.AutocompletePodPsFilters)
+	_ = cmd.RegisterFlagCompletionFunc(filterFlagName, common.AutocompletePodPsFilters)
 
 	formatFlagName := "format"
 	flags.StringVar(&psInput.Format, formatFlagName, "", "Pretty-print pods to JSON or using a Go template")
-	_ = psCmd.RegisterFlagCompletionFunc(formatFlagName, common.AutocompleteFormat(&ListPodReporter{}))
+	_ = cmd.RegisterFlagCompletionFunc(formatFlagName, common.AutocompleteFormat(&ListPodReporter{}))
 
 	flags.BoolP("noheading", "n", false, "Do not print headers")
 	flags.BoolVar(&psInput.Namespace, "ns", false, "Display namespace information of the pod")
@@ -67,10 +74,7 @@ func init() {
 
 	sortFlagName := "sort"
 	flags.StringVar(&psInput.Sort, sortFlagName, "created", "Sort output by created, id, name, or number")
-	_ = psCmd.RegisterFlagCompletionFunc(sortFlagName, common.AutocompletePodPsSort)
-
-	validate.AddLatestFlag(psCmd, &psInput.Latest)
-
+	_ = cmd.RegisterFlagCompletionFunc(sortFlagName, common.AutocompletePodPsSort)
 	flags.SetNormalizeFunc(utils.AliasFlags)
 }
 
