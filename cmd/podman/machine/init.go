@@ -11,6 +11,7 @@ import (
 	ldefine "github.com/containers/podman/v5/libpod/define"
 	"github.com/containers/podman/v5/libpod/events"
 	"github.com/containers/podman/v5/pkg/machine/define"
+	"github.com/containers/podman/v5/pkg/machine/provider"
 	"github.com/containers/podman/v5/pkg/machine/shim"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/sirupsen/logrus"
@@ -36,6 +37,7 @@ var (
 	initOptionalFlags  = InitOptionalFlags{}
 	defaultMachineName = define.DefaultMachineName
 	now                bool
+	providerOverride   string
 )
 
 // Flags which have a meaning when unspecified that differs from the flag default
@@ -158,9 +160,13 @@ func init() {
 
 	flags.BoolVar(&initOptionalFlags.tlsVerify, "tls-verify", true,
 		"Require HTTPS and verify certificates when contacting registries")
+
+	providerFlagName := "provider"
+	flags.StringVar(&providerOverride, providerFlagName, "", "Override the default machine provider")
 }
 
 func initMachine(cmd *cobra.Command, args []string) error {
+
 	initOpts.Name = defaultMachineName
 	if len(args) > 0 {
 		if len(args[0]) > maxMachineNameSize {
@@ -180,6 +186,23 @@ func initMachine(cmd *cobra.Command, args []string) error {
 
 	if !ldefine.NameRegex.MatchString(initOpts.Username) {
 		return fmt.Errorf("invalid username %q: %w", initOpts.Username, ldefine.RegexError)
+	}
+
+	// User wants to override the provider
+	if len(providerOverride) > 0 {
+		// Check if the provided string type is valid
+		overrideVMType, err := define.ParseVMType(providerOverride, define.UnknownVirt)
+		if err != nil {
+			return err
+		}
+		if overrideVMType == define.UnknownVirt {
+			return fmt.Errorf("unknown provider: %q", overrideVMType)
+		}
+		// Set the global provider value to the override
+		machineProvider, err = provider.GetByVMType(overrideVMType)
+		if err != nil {
+			return err
+		}
 	}
 
 	// TODO: When the providers comes back and we get a no such vm error, we need to check the hypervisor for
@@ -243,7 +266,7 @@ func initMachine(cmd *cobra.Command, args []string) error {
 	// 	return err
 	// }
 
-	err = shim.Init(initOpts, provider)
+	err = shim.Init(initOpts, machineProvider)
 	if err != nil {
 		// The installation is partially complete and podman should
 		// exit gracefully with no error and no success message.

@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/containers/libhvee/pkg/hypervctl"
@@ -28,8 +27,13 @@ func Get() (vmconfigs.VMProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	logrus.Debugf("Using Podman machine with `%s` virtualization provider", resolvedVMType.String())
+	return GetByVMType(resolvedVMType)
+}
+
+// GetByVMType takes a VMType (presumably from ParseVMType) and returns the correlating
+// VMProvider
+func GetByVMType(resolvedVMType define.VMType) (vmconfigs.VMProvider, error) {
 	switch resolvedVMType {
 	case define.WSLVirt:
 		return new(wsl.WSLStubber), nil
@@ -39,8 +43,8 @@ func Get() (vmconfigs.VMProvider, error) {
 		}
 		return new(hyperv.HyperVStubber), nil
 	default:
-		return nil, fmt.Errorf("unsupported virtualization provider: `%s`", resolvedVMType.String())
 	}
+	return nil, fmt.Errorf("unsupported virtualization provider: `%s`", resolvedVMType.String())
 }
 
 func GetAll() []vmconfigs.VMProvider {

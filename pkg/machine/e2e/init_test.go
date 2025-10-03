@@ -9,8 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/containers/podman/v5/pkg/machine/define"
 	"github.com/containers/podman/v5/utils"
+	jsoniter "github.com/json-iterator/go"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -634,6 +636,74 @@ var _ = Describe("podman machine init", func() {
 		proc2Session, err := mb.setName(name).setCmd(proc2.withSSHCommand([]string{"ls -d /proc/sys/fs/binfmt_misc/qemu-x86_64"})).run()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(proc2Session.outputToString()).To(ContainSubstring("/proc/sys/fs/binfmt_misc/qemu-x86_64"))
+	})
+
+	It("darwin machine init with --provider", func() {
+		skipIfVmtype(define.QemuVirt, "Test is only for Darwin")
+		skipIfVmtype(define.WSLVirt, "Test is only for Darwin")
+		skipIfVmtype(define.HyperVVirt, "Test is only for Darwin")
+
+		i := initMachine{}
+		machine1 := randomString()
+		applehvSession, err := mb.setName(machine1).setCmd(i.withImage(os.DevNull).withProvider("applehv")).run()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(applehvSession.ExitCode()).To(Equal(0))
+
+		machine2 := randomString()
+		libkrunSession, err := mb.setName(machine2).setCmd(i.withImage(os.DevNull).withProvider("libkrun")).run()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(libkrunSession.ExitCode()).To(Equal(0))
+
+		list := new(listMachine)
+		list = list.withFormat("json")
+		listSession, err := mb.setCmd(list).run()
+		Expect(err).NotTo(HaveOccurred())
+		var listResponse []*entities.ListReporter
+		err = jsoniter.Unmarshal(listSession.Bytes(), &listResponse)
+		Expect(err).NotTo(HaveOccurred())
+		for _, l := range listResponse {
+			if l.Name == machine1 {
+				Expect(l.VMType).To(Equal("applehv"))
+				continue
+			}
+			if l.Name == machine2 {
+				Expect(l.VMType).To(Equal("libkrun"))
+			}
+		}
+	})
+
+	It("windows machine init with --provider", func() {
+		skipIfVmtype(define.QemuVirt, "Test is only for Windows")
+		skipIfVmtype(define.AppleHvVirt, "Test is only for Windows")
+		skipIfVmtype(define.LibKrun, "Test is only for Windows")
+
+		i := initMachine{}
+		machine1 := randomString()
+		applehvSession, err := mb.setName(machine1).setCmd(i.withImage(os.DevNull).withProvider("wsl")).run()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(applehvSession.ExitCode()).To(Equal(0))
+
+		machine2 := randomString()
+		libkrunSession, err := mb.setName(machine2).setCmd(i.withImage(os.DevNull).withProvider("hyperv")).run()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(libkrunSession.ExitCode()).To(Equal(0))
+
+		list := new(listMachine)
+		list = list.withFormat("json")
+		listSession, err := mb.setCmd(list).run()
+		Expect(err).NotTo(HaveOccurred())
+		var listResponse []*entities.ListReporter
+		err = jsoniter.Unmarshal(listSession.Bytes(), &listResponse)
+		Expect(err).NotTo(HaveOccurred())
+		for _, l := range listResponse {
+			if l.Name == machine1 {
+				Expect(l.VMType).To(Equal("wsl"))
+				continue
+			}
+			if l.Name == machine2 {
+				Expect(l.VMType).To(Equal("hyperv"))
+			}
+		}
 	})
 })
 
