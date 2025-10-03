@@ -43,7 +43,7 @@ var (
 
 var (
 	// TODO This needs to be deleted!
-	provider vmconfigs.VMProvider
+	machineProvider vmconfigs.VMProvider
 )
 
 func init() {
@@ -54,7 +54,7 @@ func init() {
 
 func machinePreRunE(c *cobra.Command, args []string) error {
 	var err error
-	provider, err = provider2.Get()
+	machineProvider, err = provider2.Get()
 	if err != nil {
 		return err
 	}
