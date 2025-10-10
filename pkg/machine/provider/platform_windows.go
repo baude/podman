@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/containers/libhvee/pkg/hypervctl"

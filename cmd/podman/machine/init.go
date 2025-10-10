@@ -163,10 +163,12 @@ func init() {
 
 	providerFlagName := "provider"
 	flags.StringVar(&providerOverride, providerFlagName, "", "Override the default machine provider")
+
+	setDefaultConnectionFlagName := "update-connection"
+	flags.BoolVarP(&setDefaultSystemConn, setDefaultConnectionFlagName, "u", false, "Set default system connection for this machine")
 }
 
 func initMachine(cmd *cobra.Command, args []string) error {
-
 	initOpts.Name = defaultMachineName
 	if len(args) > 0 {
 		if len(args[0]) > maxMachineNameSize {
@@ -283,7 +285,11 @@ func initMachine(cmd *cobra.Command, args []string) error {
 	fmt.Println("Machine init complete")
 
 	if now {
-		return start(cmd, args)
+		if err := start(cmd, args); err != nil {
+			return err
+		}
+		// Set DefaultProvider
+		return checkAndSetDefConnection(cmd, initOpts.Name, initOpts.Rootful, setDefaultSystemConn)
 	}
 	extra := ""
 	if initOpts.Name != defaultMachineName {
