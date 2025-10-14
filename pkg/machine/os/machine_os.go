@@ -27,7 +27,7 @@ func (m *MachineOS) Apply(image string, _ ApplyOptions) error {
 	if err := machine.LocalhostSSH(m.VM.SSH.RemoteUsername, m.VM.SSH.IdentityPath, m.VMName, m.VM.SSH.Port, args); err != nil {
 		return err
 	}
-
+	// TODO this can be broken out into a function because it will be same for upgrade
 	dirs, err := env.GetMachineDirs(m.Provider.VMType())
 	if err != nil {
 		return err
@@ -42,5 +42,28 @@ func (m *MachineOS) Apply(image string, _ ApplyOptions) error {
 		}
 		fmt.Printf("Machine %q restarted successfully\n", m.VMName)
 	}
+	return nil
+}
+
+func (m *MachineOS) Upgrade(hostVersion string, opts UpgradeOptions) error {
+	// TODO This needs to be switched when no longer developing.
+
+	fmt.Println("** Running in machineos interface")
+	podman := "/home/baude/go/src/github.com/containers/podman/bin/podman"
+	args := []string{podman, "machine", "os", "upgrade"}
+	if err := machine.LocalhostSSH(m.VM.SSH.RemoteUsername, m.VM.SSH.IdentityPath, m.VMName, m.VM.SSH.Port, args); err != nil {
+		fmt.Println("1 heya")
+		return err
+	}
+
+	//if m.Restart {
+	//	if err := shim.Stop(m.VM, m.Provider, dirs, false); err != nil {
+	//		return err
+	//	}
+	//	if err := shim.Start(m.VM, m.Provider, dirs, machine.StartOptions{NoInfo: true}); err != nil {
+	//		return err
+	//	}
+	//	fmt.Printf("Machine %q restarted successfully\n", m.VMName)
+	//}
 	return nil
 }

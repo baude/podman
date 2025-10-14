@@ -104,6 +104,11 @@ func (dist *OSTree) Apply(image string, _ ApplyOptions) error {
 	return cmd.Run()
 }
 
+func (dist *OSTree) Upgrade(hostVersion string, _ UpgradeOptions) error {
+	fmt.Println(">>> in ostree interface")
+	return fmt.Errorf("not implemented")
+}
+
 // pathSafeString creates a path-safe name for our tmpdirs
 func pathSafeString(str string) string {
 	alphanumOnly := regexp.MustCompile(`[^a-zA-Z0-9]+`)
