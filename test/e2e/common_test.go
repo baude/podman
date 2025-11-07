@@ -39,7 +39,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 	"github.com/sirupsen/logrus"
 	"go.podman.io/common/pkg/cgroups"
-	"go.podman.io/common/pkg/libartifact"
+	libartifact "go.podman.io/common/pkg/libartifact/store"
 	"go.podman.io/storage/pkg/ioutils"
 	"go.podman.io/storage/pkg/lockfile"
 	"go.podman.io/storage/pkg/reexec"

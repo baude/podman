@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/opencontainers/go-digest"
-	"go.podman.io/common/pkg/libartifact"
+	libartifact "go.podman.io/common/pkg/libartifact/store"
 )
 
 type ArtifactInspectReport struct {

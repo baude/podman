@@ -14,6 +14,7 @@ import (
 	"github.com/opencontainers/go-digest"
 	"github.com/sirupsen/logrus"
 	"go.podman.io/common/libimage"
+	"go.podman.io/common/pkg/libartifact/store"
 	"go.podman.io/common/pkg/libartifact/types"
 )
 
@@ -22,7 +23,11 @@ func (ir *ImageEngine) ArtifactInspect(ctx context.Context, name string, _ entit
 	if err != nil {
 		return nil, err
 	}
-	art, err := artStore.Inspect(ctx, name)
+	asr, err := store.NewArtifactStorageReference(name, artStore)
+	if err != nil {
+		return nil, err
+	}
+	art, err := artStore.Inspect(ctx, asr)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +87,11 @@ func (ir *ImageEngine) ArtifactPull(ctx context.Context, name string, opts entit
 	if err != nil {
 		return nil, err
 	}
-	artifactDigest, err := artStore.Pull(ctx, name, *pullOptions)
+	afr, err := store.NewArtifactReference(name)
+	if err != nil {
+		return nil, err
+	}
+	artifactDigest, err := artStore.Pull(ctx, afr, *pullOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +133,11 @@ func (ir *ImageEngine) ArtifactRm(ctx context.Context, opts entities.ArtifactRem
 
 	artifactDigests := make([]*digest.Digest, 0, len(namesOrDigests))
 	for _, namesOrDigest := range namesOrDigests {
-		artifactDigest, err := artStore.Remove(ctx, namesOrDigest)
+		asr, err := store.NewArtifactStorageReference(namesOrDigest, artStore)
+		if err != nil {
+			return nil, err
+		}
+		artifactDigest, err := artStore.Remove(ctx, asr)
 		if err != nil {
 			if opts.Ignore && errors.Is(err, types.ErrArtifactNotExist) {
 				logrus.Debugf("Artifact with name or digest %q does not exist, ignoring error as request", namesOrDigest)
@@ -193,7 +206,15 @@ func (ir *ImageEngine) ArtifactPush(ctx context.Context, name string, opts entit
 		IdentityToken:                    "",
 		Writer:                           opts.Writer,
 	}
-	artifactDigest, err := artStore.Push(ctx, name, name, copyOpts)
+	afr, err := store.NewArtifactReference(name)
+	if err != nil {
+		return nil, err
+	}
+	asr, err := store.NewArtifactStorageReference(name, artStore)
+	if err != nil {
+		return nil, err
+	}
+	artifactDigest, err := artStore.Push(ctx, asr, afr, copyOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +232,11 @@ func (ir *ImageEngine) ArtifactAdd(ctx context.Context, name string, artifactBlo
 
 	// If replace is true, try to remove existing artifact (ignore errors if it doesn't exist)
 	if opts.Replace {
-		if _, err = artStore.Remove(ctx, name); err != nil && !errors.Is(err, types.ErrArtifactNotExist) {
+		asr, err := store.NewArtifactStorageReference(name, artStore)
+		if err != nil && !errors.Is(err, types.ErrArtifactNotExist) {
+			logrus.Debugf("failed to find artfact %q: %s", name, err)
+		}
+		if _, err = artStore.Remove(ctx, asr); err != nil {
 			logrus.Debugf("Artifact %q removal failed: %s", name, err)
 		}
 	}
@@ -224,7 +249,11 @@ func (ir *ImageEngine) ArtifactAdd(ctx context.Context, name string, artifactBlo
 		Replace:          opts.Replace,
 	}
 
-	artifactDigest, err := artStore.Add(ctx, name, artifactBlobs, &addOptions)
+	afr, err := store.NewArtifactReference(name)
+	if err != nil {
+		return nil, err
+	}
+	artifactDigest, err := artStore.Add(ctx, afr, artifactBlobs, &addOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -244,8 +273,11 @@ func (ir *ImageEngine) ArtifactExtract(ctx context.Context, name string, target 
 			Title:  opts.Title,
 		},
 	}
-
-	return artStore.Extract(ctx, name, target, &extractOpt)
+	asr, err := store.NewArtifactStorageReference(target, artStore)
+	if err != nil {
+		return err
+	}
+	return artStore.Extract(ctx, asr, target, &extractOpt)
 }
 
 func (ir *ImageEngine) ArtifactExtractTarStream(ctx context.Context, w io.Writer, name string, opts entities.ArtifactExtractOptions) error {
@@ -260,6 +292,9 @@ func (ir *ImageEngine) ArtifactExtractTarStream(ctx context.Context, w io.Writer
 		},
 		ExcludeTitle: opts.ExcludeTitle,
 	}
-
-	return artStore.ExtractTarStream(ctx, w, name, &extractOpt)
+	asr, err := store.NewArtifactStorageReference(name, artStore)
+	if err != nil {
+		return err
+	}
+	return artStore.ExtractTarStream(ctx, w, asr, &extractOpt)
 }
