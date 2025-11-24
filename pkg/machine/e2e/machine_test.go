@@ -67,11 +67,18 @@ var _ = BeforeSuite(func() {
 	if testDiskProvider == define.LibKrun {
 		testDiskProvider = define.AppleHvVirt // libkrun uses the applehv image for testing
 	}
-	pullError = pullOCITestDisk(tmpDir, testDiskProvider)
-
-	if pullError != nil {
-		Fail(fmt.Sprintf("failed to pull disk: %q", pullError))
+	possibleInputDisk := os.Getenv("INPUT_DISK")
+	if len(possibleInputDisk) > 0 {
+		fqImageName = possibleInputDisk
+		time.Sleep(5 * time.Second)
+	} else {
+		pullError = pullOCITestDisk(tmpDir, testDiskProvider)
+		if pullError != nil {
+			Fail(fmt.Sprintf("failed to pull disk: %q", pullError))
+		}
 	}
+
+	fmt.Println("Using test disk: " + fqImageName)
 
 	fmt.Println("Running platform specific set-up")
 	initPlatform()
